@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:yin="urn:ietf:params:xml:schema:yang:yin:1"
+           targetNamespace="http://myTest.com/ns/yang/myTest-test-myVer-config-mda-cfg"
+           xmlns="http://myTest.com/ns/yang/myTest-test-myVer-config-mda-cfg"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified"
+           version="2013-07-22"
+           xml:lang="en"
+          xmlns:myVer="http://myTest.com/ns/yang/myTest-myVer-types"
+          xmlns:config-mda-cfg="http://myTest.com/ns/yang/myTest-test-myVer-config-mda-cfg">
+
+  <xs:import namespace="http://myTest.com/ns/yang/myTest-myVer-types"
+             schemaLocation="myTest-test-myVer-types.xsd"/>
+
+  <xs:annotation>
+    <xs:documentation>
+      This schema was generated from the YANG module myTest-test-myVer-config-mda-cfg
+
+      The schema describes an instance document consisting
+      of the entire configuration data store, operational
+      data, rpc operations, and notifications.
+      This schema can thus NOT be used as-is to
+      validate NETCONF PDUs.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:annotation>
+    <xs:documentation>
+      This module contains a collection of YANG definitions
+      for myTest test-myVer config-mda package configuration.
+
+      This module contains definitions
+      for the following management objects:
+        active-nodes: Per-node configuration for active nodes
+        preconfigured-nodes: preconfigured nodes
+
+       myTest .
+      All rights reserved.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:element name="active-nodes">
+    <xs:annotation>
+      <xs:documentation>
+        Per-node configuration for active nodes
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="active-node" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>
+              The configuration for an active node
+            </xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="node-name"  type="myVer:Node-id">
+                <xs:annotation>
+                  <xs:documentation>
+                    The identifier for this node
+                  </xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:any minOccurs="0" maxOccurs="unbounded"
+                      namespace="##other" processContents="lax"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:any minOccurs="0" maxOccurs="unbounded"
+                namespace="##other" processContents="lax"/>
+      </xs:sequence>
+    </xs:complexType>
+    <xs:key name="key_active-nodes_active-node">
+      <xs:selector xpath="config-mda-cfg:active-node"/>
+      <xs:field xpath="config-mda-cfg:node-name"/>
+    </xs:key>
+  </xs:element>
+  <xs:element name="preconfigured-nodes">
+    <xs:annotation>
+      <xs:documentation>
+        preconfigured nodes
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="preconfigured-node" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>
+              The configuration for a non-active node
+            </xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="node-name"  type="myVer:Node-id">
+                <xs:annotation>
+                  <xs:documentation>
+                    The identifier for this node
+                  </xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:any minOccurs="0" maxOccurs="unbounded"
+                      namespace="##other" processContents="lax"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:any minOccurs="0" maxOccurs="unbounded"
+                namespace="##other" processContents="lax"/>
+      </xs:sequence>
+    </xs:complexType>
+    <xs:key name="key_preconfigured-nodes_preconfigured-node">
+      <xs:selector xpath="config-mda-cfg:preconfigured-node"/>
+      <xs:field xpath="config-mda-cfg:node-name"/>
+    </xs:key>
+  </xs:element>
+
+</xs:schema>

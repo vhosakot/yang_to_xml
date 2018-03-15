@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ns1:ip-domain xmlns:ns1="http://myTest.com/ns/yang/myTest-test-myVer-ip-domain-cfg">
+  <ns1:vrfs>
+    <ns1:vrf>
+      <ns1:vrf-name>-ZL16oUNaJTEqFNYFU9zuWDVj7yIhkROEktCV2xTokuINH0Qs7Yx6XLzGCuH11fOXZBckhD</ns1:vrf-name>
+      <ns1:lookup></ns1:lookup>
+      <ns1:source-interface>yYq7jJs4nGr8Xa8706ArunFGlWtt5iQc4137211991942244681557107657845462386343541738826029629038331493883151809286102359/ldH9L3tg9gfphWy90zSM3OutsglOr3SMulYq367032543077599468607109319017634042368481183339/e46Tz3KPd4DDf9byzQxGMFwc1CBCHmELBQtkDIzYHdWEwyYFkeawGRewPZXZmHW3G8R2uxnEDAMoHbfnmdoRxoj8hfcKjvQ2236052491347539620492310053158926195792552350780871740319435/74230</ns1:source-interface>
+      <ns1:name>kl`iAIFK</ns1:name>
+    </ns1:vrf>
+  </ns1:vrfs>
+</ns1:ip-domain>

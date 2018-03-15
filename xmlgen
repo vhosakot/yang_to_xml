@@ -1,0 +1,246 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+#####
+#  myTest .
+# All rights reserved.
+###
+
+_print_output = False #True if output printed rather than written to file
+
+import sys
+import os
+
+if len(sys.argv) != 3:
+	print "Usage: xmlgen <binding_file> <xml_out_dir>"
+	exit(1)
+
+binding_file = sys.argv[1]
+if '.py' not in binding_file:
+	binding_name = binding_file
+	binding_file += '.py'
+else:
+	binding_name = binding_file.replace('.py', '')
+	
+xml_dir = sys.argv[2]
+	
+if not os.path.exists(binding_file):
+	print("Cannot find binding file: " + binding_file)
+	exit(1)
+
+if not os.path.exists(xml_dir):
+	print("Out directory does not exist: " + xml_dir)
+	exit(1)
+
+import random
+import importlib
+import xmlformatter.formatter
+import pyxb
+import string
+import rstr
+	
+binding = importlib.import_module(binding_name)
+
+class types(object):
+	pluralType = pyxb.binding.content._PluralBinding
+	elementType = pyxb.binding.basis.element
+	complexType = pyxb.binding.basis.complexTypeDefinition
+	simpleType = pyxb.binding.basis.simpleTypeDefinition
+	stringType = pyxb.binding.datatypes.string
+	unsignedIntType = pyxb.binding.datatypes.unsignedInt
+	enumerationType = pyxb.binding.basis.enumeration_mixin
+	emptyType = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
+
+
+class UnsupportedTypeError(Exception):
+	def __init__(self, value, elm):
+		self.value = value
+		self.elm = elm
+	def __str__(self):
+		return repr(self.value)
+
+class StringPatternError(Exception):
+	def __init__(self, value):
+		self.value = value
+	def __str__(self):
+		return "More then one pattern detected in "+self.value+"\n"
+
+class TestError(Exception):
+	def __init__(self, v1, v2, v3):
+		self.v1 = v1
+		self.v2 = v2
+		self.v3 = v3
+	def __str__(self):
+		return repr(self.v1)+repr(self.v2)+repr(self.v3)
+		
+		 
+def string_gen(len):
+	return rstr.rstr(string.letters+string.digits+string.punctuation, len)
+	
+def regex_gen(pattern):
+	s = rstr.xeger(pattern).replace('_', 'a') #PyXB regex '\w' does not validate '_'
+	return s
+
+def number_gen(min, max):
+	return random.randint(min, max)
+	
+def gen_string_type(elm_type):	
+	patterns = elm_type._CF_pattern.patternElements()
+	enumeration = elm_type._CF_enumeration.values()
+	if patterns:
+		if len(patterns) > 1:
+			raise StringPatternError(elm_type)
+		value = regex_gen(patterns[0].pattern)
+	elif enumeration:
+		value = enumeration[0]
+	else:
+		value = string_gen(8)
+	return value
+
+def gen_numeric_type(elm_type):
+	min_inclusive = int(elm_type._CF_minInclusive.value())
+	max_inclusive = int(elm_type._CF_maxInclusive.value())
+	value = number_gen(min_inclusive, max_inclusive)
+	return value
+
+def gen_value(elm):
+	elm_type = elm.typeDefinition()
+	if issubclass(elm_type, types.stringType):
+		value = gen_string_type(elm_type)
+	elif issubclass(elm_type, types.unsignedIntType):
+		value = gen_numeric_type(elm_type)
+	else:
+		raise UnsupportedTypeError(elm_type, elm)
+	return value
+
+def write_xml(xml, file_count):
+	formatter = xmlformatter.formatter.Formatter()
+	formatted_xml = formatter.format_string(xml)
+	xml_out_name = binding_name+'_'+str(file_count)+'.xml'
+	if not _print_output:
+		xml_out_file = xml_dir+'/'+xml_out_name
+		print xml_out_file.replace('//', '/')
+		open(xml_out_file, 'wb').write(formatted_xml)
+	else:
+		print "file_"+str(file_count)+".xml\n"
+		print formatted_xml
+		print
+		
+
+def gen_xml2(elm_path, pending_writes, file_count):
+	for elm in reversed(elm_path):
+		child_elm_inst = pending_writes
+		pending_writes = elm[0]()
+		if elm[2] == True: # is_plural
+			getattr(pending_writes, elm[1]).append(child_elm_inst)
+		else:
+			setattr(pending_writes, elm[1], child_elm_inst)
+	#raise TestError(pending_writes, 0, 0)
+	xml = pending_writes.toxml("utf-8")
+	write_xml(xml, file_count)
+
+def gen_xml(elms):
+	file_count = 1
+	for elm_i in elms:
+		for elm_j in elm_i:
+			xml = elm_j.toxml("utf-8")
+			write_xml(xml, file_count)
+			file_count += 1
+
+def find_leafs(elm): #TODO function not used
+	leafs = dict()
+	for key, value in elm.__dict__.items():
+		if type(value) in (types.simpleType, types.complexType):
+			leafs.update({key: value})
+	return leafs
+
+def add_leafs(elm_inst, leafs):
+	for leaf in leafs:
+		if leaf[2]: # is_plural
+			getattr(elm_inst, leaf[1]).append(leaf[0])
+		else:
+			setattr(elm_inst, leaf[1], leaf[0])
+	return elm_inst
+	
+def find_elements(elm_path):
+	elm = elm_path[-1][0]
+	
+	if issubclass(elm.typeDefinition(), types.simpleType):
+		value = gen_value(elm)
+		elm_inst = [elm(value)]
+	else:
+		elm_inst = []
+		elm_inst_musts = elm() #TODO
+		elm_inst_container = []
+		leafs = []
+		
+		ct_pos = 0
+		mapping = [value for key, value in elm.typeDefinition()._ElementMap.items()]
+		for i in mapping:
+			
+			child_elm = i.elementBinding()
+			attr_name = child_elm.name().localName().replace('-', '_')
+			is_plural = ( type(getattr(elm(), attr_name)) == types.pluralType )
+			if issubclass(child_elm.typeDefinition(), types.complexType):
+				child_elm_inst = []
+				elm_inst_container.append([])
+				if (child_elm.typeDefinition()._ContentTypeTag == types.emptyType):
+					child_elm_inst.append(child_elm())
+				else:
+					elm_path[-1][1] = attr_name
+					elm_path[-1][2] = is_plural
+					elm_path.append([child_elm, None, None])
+					
+					child_elm_inst = find_elements(elm_path)
+					
+				for j, part in list(enumerate(child_elm_inst)):
+					elm_inst_container[ct_pos].append(elm())
+					if is_plural:
+						getattr(elm_inst_container[ct_pos][j], attr_name).append(part)
+					else:
+						setattr(elm_inst_container[ct_pos][j], attr_name, part)
+				ct_pos += 1
+			else:
+				value = gen_value(child_elm)
+				leafs.append([value, attr_name, is_plural])
+		
+		if leafs:
+			elm_inst.append(add_leafs(elm(), leafs))
+			
+		for elm_i in elm_inst_container:
+			for elm_j in elm_i:
+				if leafs:
+					elm_inst.append(add_leafs(elm_j, leafs))
+				else:
+					elm_inst.append(elm_j)
+				
+		elm_path.pop()
+		
+	return elm_inst
+
+	
+print "XML output files:\n"
+
+elms = []
+
+try:	
+	for key, value in binding.__dict__.items():
+		if type(value) == types.elementType:
+			elm_path = [[value, None, None]]
+			elms.append( find_elements(elm_path) )
+
+except UnsupportedTypeError as e:
+	print "Processing error: unsupported type: "+str(e)
+	elm = e.elm
+	exit(1)
+		
+except TestError as e:
+	print "Processing error: unsupported type: "+str(e)
+	v1 = e.v1
+	v2 = e.v2
+	v3 = e.v3
+	exit(1)
+
+gen_xml(elms)
+	
+exit(0)
