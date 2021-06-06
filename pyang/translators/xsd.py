@@ -636,7 +636,7 @@ def xsd_type_name(ctx, type, parent):
     elif type.arg == 'leafref':
         (ref, _pos) = parent.i_leafref_ptr
         return xsd_type_name(ctx, ref.search_one('type'), ref)
-    elif ((type.i_typedef != None) and (":" not in type.arg)):
+    elif ((type.i_typedef != None) and (hasattr(type.i_typedef, 'i_xsd_name')) and (":" not in type.arg)):
         return type.i_typedef.i_xsd_name
     elif type.i_typedef is not None:
         if hasattr(type.i_typedef, 'i_xsd_name'):
